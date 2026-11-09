@@ -1,0 +1,17 @@
+CREATE SCHEMA IF NOT EXISTS domashka;
+REVOKE ALL ON SCHEMA domashka FROM PUBLIC, anon, authenticated;
+CREATE TABLE domashka.members (id TEXT PRIMARY KEY, username TEXT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, days TEXT NOT NULL, times TEXT NOT NULL, subscribed INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL);
+CREATE TABLE domashka.settings (id INTEGER PRIMARY KEY, title TEXT NOT NULL, intro TEXT NOT NULL, accent TEXT NOT NULL);
+CREATE TABLE domashka.broadcasts (id TEXT PRIMARY KEY, body TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE domashka.deliveries (broadcast_id TEXT NOT NULL REFERENCES domashka.broadcasts(id), member_id TEXT NOT NULL REFERENCES domashka.members(id), status TEXT NOT NULL DEFAULT 'pending', PRIMARY KEY (broadcast_id, member_id));
+CREATE INDEX deliveries_pending_idx ON domashka.deliveries(broadcast_id,status);
+CREATE TABLE domashka.polls (id TEXT PRIMARY KEY, question TEXT NOT NULL, options TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE domashka.answers (poll_id TEXT NOT NULL REFERENCES domashka.polls(id), member_id TEXT NOT NULL REFERENCES domashka.members(id), answer INTEGER NOT NULL, PRIMARY KEY(poll_id,member_id));
+CREATE INDEX answers_member_idx ON domashka.answers(member_id);
+ALTER TABLE domashka.members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE domashka.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE domashka.broadcasts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE domashka.deliveries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE domashka.polls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE domashka.answers ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON ALL TABLES IN SCHEMA domashka FROM PUBLIC, anon, authenticated;
