@@ -1,13 +1,18 @@
 # Домашка
 
-Telegram Mini App: [@domaaashka_bot](https://t.me/domaaashka_bot)
+Telegram Mini App: https://t.me/domaaashka_bot
+Frontend: GitHub Pages. Backend: Supabase Edge Function `domashka`, PostgreSQL private schema `domashka`.
 
-Frontend: GitHub Pages (index.html, icon.jpg).
-Backend: Supabase Edge Function `domashka` (index.ts, app.js).
-Database: PostgreSQL, closed schema `domashka`; schema.sql documents the structure.
+## Организатору
 
-Registration, named poll answers, broadcasts, theme text, member statistics, CSV export, and Telegram contact links for the organizer. The server verifies Telegram initData and checks organizer IDs. Bot credentials stay in Supabase Vault; they are never included in the frontend or repository.
+- В разделе «Люди и ответы» добавляй и убирай участников из актива. Строчная отметка «a» видна только администратору.
+- Для текстовой рассылки выбирай «Всем участникам» или «Только активу». Перед отправкой есть предпросмотр и подтверждение.
+- Для голосового или кружка отправь запись в личный чат бота. Она сохранится как черновик. Затем открой админку → «Рассылка», проверь запись, выбери аудиторию и отправь.
+- Кнопка «Подготовка в субботу» заполняет опрос «Будешь на домашке-подготовке в субботу, 21 ноября?» с вариантами «Буду / Не буду» для актива. Публикация и отправка приглашения выполняются отдельно вручную.
+- Ответы на опросы именные и доступны только организатору. В опросе видно, кто ещё не ответил.
 
-Free Supabase projects may pause after low database activity over 7 days; they can be resumed from the Supabase dashboard within 90 days. GitHub Pages itself stays available.
+## Публикация обновления
 
-Do not store database exports, registration data, bot tokens, or service keys in this public repository.
+Сначала выполнить additive migration.sql в исходном проекте. Затем обновить Edge Function файлами index.ts и app.js (проверка JWT шлюза остаётся прежней; API самостоятельно проверяет Telegram initData и webhook secret). После проверки сервера опубликовать index.html на GitHub Pages.
+
+Токен бота и параметры сервера остаются в Supabase Vault. Не добавлять в публичный репозиторий ключи, выгрузки анкет и записи участников.
