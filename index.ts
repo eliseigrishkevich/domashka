@@ -2,7 +2,7 @@ import postgres from 'npm:postgres@3.4.7';
 import app from './app.js';
 const sql=postgres(Deno.env.get('SUPABASE_DB_URL')!,{prepare:false,max:2,idle_timeout:20,connect_timeout:10});
 const allowedOrigin='https://eliseigrishkevich.github.io';
-function convert(query:string){let n=0;let q=query.replace(/\?/g,()=>'$'+(++n));const ignore=/INSERT OR IGNORE INTO/i.test(q);q=q.replace(/INSERT OR IGNORE INTO/ig,'INSERT INTO');q=q.replace(/\b(FROM|INTO|UPDATE) (members|settings|polls|answers|broadcasts|deliveries)\b/gi,(_m,op,t)=>op+' domashka.'+t);if(ignore)q+=' ON CONFLICT DO NOTHING';return q;}
+function convert(query:string){let n=0;let q=query.replace(/\?/g,()=>'$'+(++n));const ignore=/INSERT OR IGNORE INTO/i.test(q);q=q.replace(/INSERT OR IGNORE INTO/ig,'INSERT INTO');q=q.replace(/\b(FROM|INTO|UPDATE) (members|settings|polls|answers|broadcasts|deliveries|poll_deliveries)\b/gi,(_m,op,t)=>op+' domashka.'+t);if(ignore)q+=' ON CONFLICT DO NOTHING';return q;}
 class Statement{query:string;values:unknown[];constructor(query:string,values:unknown[]=[]){this.query=query;this.values=values}bind(...values:unknown[]){return new Statement(this.query,values)}async all(client:any=sql){const result=await client.unsafe(convert(this.query),this.values);return {results:Array.from(result)}}async first(){return (await this.all()).results[0]||null}async run(client:any=sql){const result=await client.unsafe(convert(this.query),this.values);return {meta:{changes:Number(result.count||0)}}}
 }
 const db={prepare:(query:string)=>new Statement(query),batch:(statements:Statement[])=>sql.begin(async tx=>{const results=[];for(const s of statements)results.push(await s.run(tx));return results})};
