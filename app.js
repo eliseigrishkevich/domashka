@@ -87,6 +87,19 @@ if(!env.BOT_TOKEN||!env.DB)return json({error:'Приложение готови
 const u=await authenticate(req.headers.get('X-Telegram-Init-Data'),env.BOT_TOKEN),id=String(u.id),isAdmin=admin(u,env);
 if(path==='/api/me'&&req.method==='GET'){const storedMember=await env.DB.prepare('SELECT * FROM members WHERE id=?').bind(id).first();const member=storedMember?Object.fromEntries(Object.entries(storedMember).filter(([key])=>key!=='is_core')):null;const polls=await env.DB.prepare("SELECT id,question,options FROM polls WHERE active=1 AND deleted_at IS NULL AND channel='web' AND (audience='all' OR ?=1)").bind(storedMember?.is_core===1?1:0).all();const answers=await env.DB.prepare('SELECT poll_id,answer FROM answers WHERE member_id=? AND answer>=0').bind(id).all();return json({member,isAdmin,polls:polls.results,answers:answers.results});}
 const b=req.method==='POST'?await req.json():{};
+if(path==='/api/saturday-availability'&&req.method==='POST'){
+  const pollId='8f953ea1-68a4-4270-8a72-9dfb001845cd';
+  const options=['Да','Нет','Пока не знаю'];
+  if(!Number.isInteger(b.answer)||!options[b.answer])throw Error('Выбери ответ.');
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO polls(id,question,options,active,audience,channel) VALUES(?,?,?,1,?,?) ON CONFLICT(id) DO NOTHING').bind(pollId,'Сможешь ли ты ходить на домашку по субботам в 19:00 возле церкви?',JSON.stringify(options),'all','web'),
+    env.DB.prepare("INSERT INTO members(id,username,first_name,last_name,days,times,subscribed,updated_at) SELECT ?,?,?,?,?,?,0,? FROM polls WHERE id=? AND active=1 AND deleted_at IS NULL ON CONFLICT(id) DO NOTHING").bind(id,u.username||'',u.first_name||'Участник',u.last_name||'','[]','[]',new Date().toISOString(),pollId),
+    env.DB.prepare('INSERT INTO answers(poll_id,member_id,answer) SELECT id,?,? FROM polls WHERE id=? AND active=1 AND deleted_at IS NULL ON CONFLICT(poll_id,member_id) DO UPDATE SET answer=excluded.answer').bind(id,b.answer,pollId)
+  ]);
+  const poll=await env.DB.prepare('SELECT active,deleted_at FROM polls WHERE id=?').bind(pollId).first();
+  if(!poll?.active||poll.deleted_at)throw Error('Опрос закрыт.');
+  return json({ok:true});
+}
 if(path==='/api/register'&&req.method==='POST'){
 for(const k of ['first_name','last_name'])if(typeof b[k]!=='string'||!b[k].trim()||b[k].length>80)throw Error('Укажи имя и фамилию (до 80 символов).');
 if(!Array.isArray(b.days)||!b.days.length||b.days.some(x=>!Number.isInteger(x)||x<1||x>6||x===3)||!Array.isArray(b.times)||!b.times.length||b.times.some(x=>![18,19].includes(x)))throw Error('Выбери удобные дни и время.');
